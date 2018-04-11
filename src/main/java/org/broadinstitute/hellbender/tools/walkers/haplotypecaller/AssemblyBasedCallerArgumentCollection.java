@@ -21,6 +21,7 @@ public abstract class AssemblyBasedCallerArgumentCollection extends StandardCall
     public static final String CAPTURE_ASSEMBLY_FAILURE_BAM_LONG_NAME = "capture-assembly-failure-bam";
     public static final String ERROR_CORRECT_READS_LONG_NAME = "error-correct-reads";
     public static final String DO_NOT_RUN_PHYSICAL_PHASING_LONG_NAME = "do-not-run-physical-phasing";
+    public static final String SPLIT_MNPS_LONG_NAME = "split-mnps";
     public static final String MIN_BASE_QUALITY_SCORE_LONG_NAME = "min-base-quality-score";
     public static final String SMITH_WATERMAN_LONG_NAME = "smith-waterman";
 
@@ -109,6 +110,13 @@ public abstract class AssemblyBasedCallerArgumentCollection extends StandardCall
     @Advanced
     @Argument(fullName = DO_NOT_RUN_PHYSICAL_PHASING_LONG_NAME,  doc = "Disable physical phasing", optional = true)
     public boolean doNotRunPhysicalPhasing = false;
+
+    /**
+     * If true, treat each n-base MNP as n separate SNPs.
+     */
+    @Advanced
+    @Argument(fullName = SPLIT_MNPS_LONG_NAME,  doc = "If true, treat each n-base MNP as n separate SNPs", optional = true)
+    public boolean splitMnps = false;
 
     /**
      * Bases with a quality below this threshold will not be used for calling.

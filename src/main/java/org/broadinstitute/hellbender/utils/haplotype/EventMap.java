@@ -34,14 +34,14 @@ public final class EventMap extends TreeMap<Integer, VariantContext> {
     private final Locatable refLoc;
     private final String sourceNameToAdd;
 
-    public EventMap(final Haplotype haplotype, final byte[] ref, final Locatable refLoc, final String sourceNameToAdd) {
+    public EventMap(final Haplotype haplotype, final byte[] ref, final Locatable refLoc, final String sourceNameToAdd, final boolean splitMnps) {
         super();
         this.haplotype = haplotype;
         this.ref = ref;
         this.refLoc = refLoc;
         this.sourceNameToAdd = sourceNameToAdd;
 
-        processCigarForInitialEvents();
+        processCigarForInitialEvents(splitMnps);
     }
 
     /**
@@ -57,7 +57,11 @@ public final class EventMap extends TreeMap<Integer, VariantContext> {
             addVC(vc);
     }
 
-    protected void processCigarForInitialEvents() {
+    /**
+     *
+     * @param splitMnps if true, treat each n-base MNP as n separate SNPs
+     */
+    protected void processCigarForInitialEvents(final boolean splitMnps) {
         final Cigar cigar = haplotype.getCigar();
         final byte[] alignment = haplotype.getBases();
 
@@ -339,12 +343,14 @@ public final class EventMap extends TreeMap<Integer, VariantContext> {
      * @param ref the reference bases
      * @param refLoc the span of the reference bases
      * @param debug if true, we'll emit debugging information during this operation
+     * @param splitMnps if true, treat each n-base MNP as n separate SNPs
      * @return a sorted set of start positions of all events among all haplotypes
      */
     public static TreeSet<Integer> buildEventMapsForHaplotypes( final List<Haplotype> haplotypes,
                                                                 final byte[] ref,
                                                                 final Locatable refLoc,
-                                                                final boolean debug) {
+                                                                final boolean debug,
+                                                                final boolean splitMnps) {
         // Using the cigar from each called haplotype figure out what events need to be written out in a VCF file
         final TreeSet<Integer> startPosKeySet = new TreeSet<>();
         int hapNumber = 0;
@@ -352,7 +358,7 @@ public final class EventMap extends TreeMap<Integer, VariantContext> {
         if( debug ) logger.info("=== Best Haplotypes ===");
         for( final Haplotype h : haplotypes ) {
             // Walk along the alignment and turn any difference from the reference into an event
-            h.setEventMap(new EventMap(h, ref, refLoc, "HC" + hapNumber++));
+            h.setEventMap(new EventMap(h, ref, refLoc, "HC" + hapNumber++, splitMnps));
             startPosKeySet.addAll(h.getEventMap().getStartPositions());
 
             if( debug ) {

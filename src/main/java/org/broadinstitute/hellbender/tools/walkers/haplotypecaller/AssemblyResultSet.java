@@ -501,13 +501,13 @@ public final class AssemblyResultSet {
      *
      * <p/>
      * The result is sorted incrementally by location.
-     *
+     * @param splitMnps if true, treat each n-base MNP as n separate SNPs
      * @return never {@code null}, but perhaps an empty collection.
      */
-    public SortedSet<VariantContext> getVariationEvents() {
+    public SortedSet<VariantContext> getVariationEvents(final boolean splitMnps) {
         if (variationEvents == null) {
             final List<Haplotype> haplotypeList = getHaplotypeList();
-            EventMap.buildEventMapsForHaplotypes(haplotypeList, fullReferenceWithPadding, paddedReferenceLoc, debug);
+            EventMap.buildEventMapsForHaplotypes(haplotypeList, fullReferenceWithPadding, paddedReferenceLoc, debug, splitMnps);
             variationEvents = EventMap.getAllVariantContexts(haplotypeList);
         }
         return variationEvents;

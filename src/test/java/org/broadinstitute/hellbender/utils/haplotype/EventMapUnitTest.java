@@ -106,7 +106,7 @@ public final class EventMapUnitTest extends GATKBaseTest {
     public void testBlockSubstitutionsData(final String refBases, final String haplotypeBases, final String cigar, final VariantContext expectedBlock) {
         final Haplotype hap = new Haplotype(haplotypeBases.getBytes(), false, 0, TextCigarCodec.decode(cigar));
         final GenomeLoc loc = new UnvalidatingGenomeLoc(CHR, 0, 1, refBases.length());
-        final EventMap ee = new EventMap(hap, refBases.getBytes(), loc, NAME);
+        final EventMap ee = new EventMap(hap, refBases.getBytes(), loc, NAME, true);
         ee.replaceClumpedEventsWithBlockSubstitutions();
         Assert.assertEquals(ee.getNumberOfEvents(), 1);
         final VariantContext actual = ee.getVariantContexts().iterator().next();
@@ -135,7 +135,7 @@ public final class EventMapUnitTest extends GATKBaseTest {
     public void testAdjacentSNPIndelTest(final String refBases, final String haplotypeBases, final String cigar, final List<List<String>> expectedAlleles) {
         final Haplotype hap = new Haplotype(haplotypeBases.getBytes(), false, 0, TextCigarCodec.decode(cigar));
         final GenomeLoc loc = new UnvalidatingGenomeLoc(CHR, 0, 1, refBases.length());
-        final EventMap ee = new EventMap(hap, refBases.getBytes(), loc, NAME);
+        final EventMap ee = new EventMap(hap, refBases.getBytes(), loc, NAME, true);
         ee.replaceClumpedEventsWithBlockSubstitutions();
         Assert.assertEquals(ee.getNumberOfEvents(), expectedAlleles.size());
         final List<VariantContext> actuals = new ArrayList<>(ee.getVariantContexts());
