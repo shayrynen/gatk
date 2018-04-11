@@ -11,11 +11,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.utils.BaseUtils;
+import org.broadinstitute.hellbender.utils.IndexRange;
 import org.broadinstitute.hellbender.utils.Utils;
 import org.broadinstitute.hellbender.utils.read.AlignmentUtils;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.IntPredicate;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Extract simple VariantContext events from a single haplotype
@@ -130,20 +134,38 @@ public final class EventMap extends TreeMap<Integer, VariantContext> {
                 case EQ:
                 case X:
                 {
-                    for( int iii = 0; iii < elementLength; iii++ ) {
-                        final byte refByte = ref[refPos];
-                        final byte altByte = alignment[alignmentPos];
-                        if( refByte != altByte ) { // SNP!
-                            if( BaseUtils.isRegularBase(refByte) && BaseUtils.isRegularBase(altByte) ) {
-                                final List<Allele> snpAlleles = new ArrayList<>();
-                                snpAlleles.add( Allele.create( refByte, true ) );
-                                snpAlleles.add( Allele.create( altByte, false ) );
-                                proposedEvents.add(new VariantContextBuilder(sourceNameToAdd, refLoc.getContig(), refLoc.getStart() + refPos, refLoc.getStart() + refPos, snpAlleles).make());
-                            }
+                    final List<Integer> mismatchBlockStarts = new ArrayList<>();    //inclusive
+                    final List<Integer> mismatchBlockEnds = new ArrayList<>();      //exclusive
+                    boolean previousMismatch = false;
+                    for( int offset = 0; offset < elementLength; offset++ ) {
+                        final byte refByte = ref[refPos + offset ];
+                        final byte altByte = alignment[alignmentPos + offset];
+                        final boolean mismatch = refByte != altByte && BaseUtils.isRegularBase(refByte) && BaseUtils.isRegularBase(altByte);
+                        if (mismatch && (!previousMismatch || splitMnps)) {
+                            mismatchBlockStarts.add(offset);
                         }
-                        refPos++;
-                        alignmentPos++;
+
+                        if (previousMismatch && (!mismatch || splitMnps)) {
+                            mismatchBlockEnds.add(offset);
+                        }
+                        previousMismatch = mismatch;
                     }
+                    // handle terminal mismatch
+                    if (previousMismatch) {
+                        mismatchBlockEnds.add(elementLength);
+                    }
+
+                    for (int n = 0; n < mismatchBlockStarts.size(); n++) {
+                        final int startOffset = mismatchBlockStarts.get(n);
+                        final int endOffset = mismatchBlockEnds.get(n);
+                        final Allele refAllele = Allele.create(Arrays.copyOfRange(ref, refPos + startOffset, refPos + endOffset), true);
+                        final Allele altAllele = Allele.create(Arrays.copyOfRange(alignment, alignmentPos + startOffset, alignmentPos + endOffset), false);
+                        proposedEvents.add(new VariantContextBuilder(sourceNameToAdd, refLoc.getContig(), refLoc.getStart() + refPos + startOffset, refLoc.getStart() + refPos + endOffset - 1, Arrays.asList(refAllele, altAllele)).make());
+                    }
+
+                    // move refPos and alignmentPos forward to the end of this cigar element
+                    refPos += elementLength;
+                    alignmentPos += elementLength;
                     break;
                 }
                 case N:

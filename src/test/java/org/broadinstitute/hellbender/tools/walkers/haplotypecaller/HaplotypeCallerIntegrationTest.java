@@ -651,12 +651,15 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
         final File correctedOutputUsingContaminationFile = createTempFile("testContaminationCorrectionCorrectedOutputUsingContaminationFile", gvcfMode ? ".g.vcf" : ".vcf");
 
         // Generate raw uncorrected calls on the contaminated bam, for comparison purposes
+        // Note that there are a huge number of MNPs in this bam, and that in {@code gatk4UncontaminatedCallsVCF} and
+        // {@code gatk3ContaminationCorrectedCallsVCF} these are represented as independent consecutive SNPs
+        // thus we specify "--split-mnps" in several places below
         final String[] noContaminationCorrectionArgs = {
                 "-I", contaminatedBam,
                 "-R", reference,
                 "-L", interval.toString(),
                 "-O", uncorrectedOutput.getAbsolutePath(),
-                "-ERC", (gvcfMode ? "GVCF" : "NONE")
+                "-ERC", (gvcfMode ? "GVCF" : "NONE"), "--split-mnps",
         };
         Utils.resetRandomGenerator();
         runCommandLine(noContaminationCorrectionArgs);
@@ -668,7 +671,7 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
                 "-L", interval.toString(),
                 "-O", correctedOutput.getAbsolutePath(),
                 "-contamination", Double.toString(contaminationFraction),
-                "-ERC", (gvcfMode ? "GVCF" : "NONE")
+                "-ERC", (gvcfMode ? "GVCF" : "NONE"), "--split-mnps",
         };
         Utils.resetRandomGenerator();
         runCommandLine(contaminationCorrectionArgs);
@@ -680,7 +683,7 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
                 "-L", interval.toString(),
                 "-O", correctedOutputUsingContaminationFile.getAbsolutePath(),
                 "-contamination-file", contaminationFile,
-                "-ERC", (gvcfMode ? "GVCF" : "NONE")
+                "-ERC", (gvcfMode ? "GVCF" : "NONE"), "--split-mnps",
         };
         Utils.resetRandomGenerator();
         runCommandLine(contaminationCorrectionFromFileArgs);
