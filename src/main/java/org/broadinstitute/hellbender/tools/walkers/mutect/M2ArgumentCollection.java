@@ -36,6 +36,7 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
     public static final String DOWNSAMPLING_STRIDE_SHORT_NAME = "stride";
     public static final String MAX_SUSPICIOUS_READS_PER_ALIGNMENT_START_LONG_NAME = "max-suspicious-reads-per-alignment-start";
     public static final String NORMAL_LOD_LONG_NAME = "normal-lod";
+    public static final String SPLIT_MNPS_LONG_NAME = "split-mnps";
 
     //TODO: HACK ALERT HACK ALERT HACK ALERT
     //TODO: GATK4 does not yet have a way to tag inputs, eg -I:tumor tumor.bam -I:normal normal.bam,
@@ -130,6 +131,13 @@ public class M2ArgumentCollection extends AssemblyBasedCallerArgumentCollection 
      */
     @Argument(fullName = NORMAL_LOD_LONG_NAME, optional = true, doc = "LOD threshold for calling normal variant non-germline.")
     public double normalLodThreshold = 2.2;
+
+    /**
+     * If true, treat each n-base MNP as n separate SNPs.
+     */
+    @Advanced
+    @Argument(fullName = SPLIT_MNPS_LONG_NAME,  doc = "If true, treat each n-base MNP as n separate SNPs", optional = true)
+    public boolean splitMnps = false;
 
 
     /**

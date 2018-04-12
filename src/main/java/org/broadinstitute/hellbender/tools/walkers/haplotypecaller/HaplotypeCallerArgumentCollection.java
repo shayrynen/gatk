@@ -25,6 +25,8 @@ import java.util.List;
 public class HaplotypeCallerArgumentCollection extends AssemblyBasedCallerArgumentCollection implements Serializable{
     private static final long serialVersionUID = 1L;
 
+    public static final String DONT_SPLIT_MNPS_LONG_NAME = "dont-split-mnps";
+
     /**
      * When HaplotypeCaller is run with -ERC GVCF or -ERC BP_RESOLUTION, some annotations are excluded from the
      * output by default because they will only be meaningful once they have been recalculated by GenotypeGVCFs. As
@@ -140,4 +142,11 @@ public class HaplotypeCallerArgumentCollection extends AssemblyBasedCallerArgume
     @Hidden
     @Argument(fullName = "dont-genotype", doc = "Perform assembly but do not genotype variants", optional = true)
     public boolean dontGenotype = false;
+
+    /**
+     * If false, treat each n-base MNP as n separate SNPs.
+     */
+    @Advanced
+    @Argument(fullName = DONT_SPLIT_MNPS_LONG_NAME,  doc = "If false, treat each n-base MNP as n separate SNPs", optional = true)
+    public boolean dontSplitMnps = false;
 }

@@ -646,7 +646,8 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
                 "-I", bam,
                 "-R", b37_reference_20_21,
                 "-L", "20:10100000-10150000",
-                "-O", outputVcf.getAbsolutePath()
+                "-O", outputVcf.getAbsolutePath(),
+                "--dont-split-mnps"
         };
         Utils.resetRandomGenerator();
         runCommandLine(args);
@@ -681,13 +682,13 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
         // Generate raw uncorrected calls on the contaminated bam, for comparison purposes
         // Note that there are a huge number of MNPs in this bam, and that in {@code gatk4UncontaminatedCallsVCF} and
         // {@code gatk3ContaminationCorrectedCallsVCF} these are represented as independent consecutive SNPs
-        // thus we specify "--split-mnps" in several places below
+        // Thus if we ever make {@code dontSplitMnps} true by default, this will fail
         final String[] noContaminationCorrectionArgs = {
                 "-I", contaminatedBam,
                 "-R", reference,
                 "-L", interval.toString(),
                 "-O", uncorrectedOutput.getAbsolutePath(),
-                "-ERC", (gvcfMode ? "GVCF" : "NONE"), "--split-mnps",
+                "-ERC", (gvcfMode ? "GVCF" : "NONE"),
         };
         Utils.resetRandomGenerator();
         runCommandLine(noContaminationCorrectionArgs);
@@ -699,7 +700,7 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
                 "-L", interval.toString(),
                 "-O", correctedOutput.getAbsolutePath(),
                 "-contamination", Double.toString(contaminationFraction),
-                "-ERC", (gvcfMode ? "GVCF" : "NONE"), "--split-mnps",
+                "-ERC", (gvcfMode ? "GVCF" : "NONE"),
         };
         Utils.resetRandomGenerator();
         runCommandLine(contaminationCorrectionArgs);
@@ -711,7 +712,7 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
                 "-L", interval.toString(),
                 "-O", correctedOutputUsingContaminationFile.getAbsolutePath(),
                 "-contamination-file", contaminationFile,
-                "-ERC", (gvcfMode ? "GVCF" : "NONE"), "--split-mnps",
+                "-ERC", (gvcfMode ? "GVCF" : "NONE"),
         };
         Utils.resetRandomGenerator();
         runCommandLine(contaminationCorrectionFromFileArgs);
