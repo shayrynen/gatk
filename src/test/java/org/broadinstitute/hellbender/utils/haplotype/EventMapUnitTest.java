@@ -128,6 +128,17 @@ public final class EventMapUnitTest extends GATKBaseTest {
         return tests.toArray(new Object[][]{});
     }
 
+    @DataProvider(name = "MNPTest")
+    public Object[][] makeMNPTest() {
+        List<Object[]> tests = new ArrayList<>();
+
+        tests.add(new Object[]{"TTTGGGAAA", "TTTCCCAAA", "3M3X3M", Arrays.asList(Arrays.asList("GGG", "CCC")), Arrays.asList(Arrays.asList("G", "C"), Arrays.asList("G", "C"), Arrays.asList("G", "C"))});
+        tests.add(new Object[]{"TTTGGGAAA", "TTTCCCAAA", "9M", Arrays.asList(Arrays.asList("GGG", "CCC")), Arrays.asList(Arrays.asList("G", "C"), Arrays.asList("G", "C"), Arrays.asList("G", "C"))});
+        tests.add(new Object[]{"ACGT", "CGTA", "4M", Arrays.asList(Arrays.asList("ACGT", "CGTA")), Arrays.asList(Arrays.asList("A", "C"), Arrays.asList("C", "G"), Arrays.asList("G", "T"), Arrays.asList("T", "A"))});
+        tests.add(new Object[]{"ACTTGC", "CATTCG", "6M", Arrays.asList(Arrays.asList("AC", "CA"), Arrays.asList("GC", "CG")), Arrays.asList(Arrays.asList("A", "C"), Arrays.asList("C", "A"), Arrays.asList("G", "C"), Arrays.asList("C", "G"))});
+        return tests.toArray(new Object[][]{});
+    }
+
     /**
      * Example testng test using MyDataProvider
      */
@@ -143,6 +154,29 @@ public final class EventMapUnitTest extends GATKBaseTest {
             final VariantContext actual = actuals.get(i);
             Assert.assertEquals(actual.getReference().getDisplayString(), expectedAlleles.get(i).get(0));
             Assert.assertEquals(actual.getAlternateAllele(0).getDisplayString(), expectedAlleles.get(i).get(1));
+        }
+    }
+
+    @Test(dataProvider = "MNPTest")
+    public void testMNPs(final String refBases, final String haplotypeBases, final String cigar, final List<List<String>> expectedAllelesUnsplit, final List<List<String>> expectedAllelesSplit) {
+        final Haplotype hap = new Haplotype(haplotypeBases.getBytes(), false, 0, TextCigarCodec.decode(cigar));
+        final GenomeLoc loc = new UnvalidatingGenomeLoc(CHR, 0, 1, refBases.length());
+        final EventMap eeSplit = new EventMap(hap, refBases.getBytes(), loc, NAME, true);
+        final EventMap eeUnsplit = new EventMap(hap, refBases.getBytes(), loc, NAME, false);
+        Assert.assertEquals(eeSplit.getNumberOfEvents(), expectedAllelesSplit.size());
+        Assert.assertEquals(eeUnsplit.getNumberOfEvents(), expectedAllelesUnsplit.size());
+        final List<VariantContext> actualsSplit = new ArrayList<>(eeSplit.getVariantContexts());
+        for ( int i = 0; i < eeSplit.getNumberOfEvents(); i++ ) {
+            final VariantContext actual = actualsSplit.get(i);
+            Assert.assertEquals(actual.getReference().getDisplayString(), expectedAllelesSplit.get(i).get(0));
+            Assert.assertEquals(actual.getAlternateAllele(0).getDisplayString(), expectedAllelesSplit.get(i).get(1));
+        }
+
+        final List<VariantContext> actualsUnsplit = new ArrayList<>(eeUnsplit.getVariantContexts());
+        for ( int i = 0; i < eeUnsplit.getNumberOfEvents(); i++ ) {
+            final VariantContext actual = actualsUnsplit.get(i);
+            Assert.assertEquals(actual.getReference().getDisplayString(), expectedAllelesUnsplit.get(i).get(0));
+            Assert.assertEquals(actual.getAlternateAllele(0).getDisplayString(), expectedAllelesUnsplit.get(i).get(1));
         }
     }
 
