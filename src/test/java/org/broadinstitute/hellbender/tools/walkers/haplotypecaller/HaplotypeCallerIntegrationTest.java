@@ -1,5 +1,6 @@
 package org.broadinstitute.hellbender.tools.walkers.haplotypecaller;
 
+import com.google.common.collect.ImmutableMap;
 import htsjdk.samtools.SamFiles;
 import htsjdk.tribble.Tribble;
 import htsjdk.variant.variantcontext.Allele;
@@ -635,6 +636,33 @@ public class HaplotypeCallerIntegrationTest extends CommandLineProgramTest {
                   expectedGATK3ContaminationCorrectedCallsGVCF
                 }
         };
+    }
+
+    @Test
+    public void testMnpsAreRepresentedAsSingleEvents() {
+        final String bam = largeFileTestDir + "contaminated_bams/CEUTrio.HiSeq.WGS.b37.NA12878.CONTAMINATED.WITH.HCC1143.NORMALS.AT.15PERCENT.bam";
+        final File outputVcf = createTempFile("output", ".vcf");
+        final String[] args = {
+                "-I", bam,
+                "-R", b37_reference_20_21,
+                "-L", "20:10100000-10150000",
+                "-O", outputVcf.getAbsolutePath()
+        };
+        Utils.resetRandomGenerator();
+        runCommandLine(args);
+
+        final Map<Integer, Allele> altAllelesByPosition = StreamSupport.stream(new FeatureDataSource<VariantContext>(outputVcf).spliterator(), false)
+                .collect(Collectors.toMap(VariantContext::getStart, vc -> vc.getAlternateAllele(0)));
+
+        final Map<Integer, Allele> expectedMnps = ImmutableMap.of(
+                10102247, Allele.create("AC", false),
+                10102530, Allele.create("TG", false),
+                10103849, Allele.create("CA", false));
+
+        expectedMnps.entrySet().forEach(entry -> {
+            final int position = entry.getKey();
+            Assert.assertEquals(altAllelesByPosition.get(position), entry.getValue());
+        });
     }
 
     @Test(dataProvider = "getContaminationCorrectionTestData")
