@@ -9,6 +9,7 @@ import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.tools.spark.sv.utils.SvCigarUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
+import org.broadinstitute.hellbender.utils.read.CigarUtils;
 import scala.Tuple2;
 import scala.Tuple3;
 
@@ -39,17 +40,30 @@ public final class ContigAlignmentsModifier {
         Utils.validateArg(clipLengthOnRead < input.endInAssembledContig - input.startInAssembledContig + 1,
                             "input alignment to be clipped away: " + input.toPackedString() + "\twith clip length: " + clipLengthOnRead);
 
-        final Tuple2<SimpleInterval, Cigar> result = computeNewRefSpanAndCigar(input, clipLengthOnRead, clipFrom3PrimeEnd);
+        final Tuple2<SimpleInterval, Cigar> newRefSpanAndCigar = computeNewRefSpanAndCigar(input, clipLengthOnRead, clipFrom3PrimeEnd);
+        final Tuple2<Integer, Integer> newContigStartAndEnd =
+                computeNewReadSpan(input.startInAssembledContig, input.endInAssembledContig, newRefSpanAndCigar._2,
+                        clipLengthOnRead, clipFrom3PrimeEnd);
+        return new AlignmentInterval(newRefSpanAndCigar._1, newContigStartAndEnd._1, newContigStartAndEnd._2, newRefSpanAndCigar._2,
+                input.forwardStrand, input.mapQual, AlignmentInterval.NO_NM, AlignmentInterval.NO_AS, AlnModType.UNDERGONE_OVERLAP_REMOVAL);
+    }
+
+    private static Tuple2<Integer, Integer> computeNewReadSpan(final int originalContigStart, final int originalContigEnd,
+                                                               final Cigar newCigarAlong5to3DirectionOfContig,
+                                                               final int clipLengthOnRead, final boolean clipFrom3PrimeEnd) {
         final int newTigStart, newTigEnd;
         if (clipFrom3PrimeEnd) {
-            newTigStart = input.startInAssembledContig;
-            newTigEnd   = input.endInAssembledContig - clipLengthOnRead;
+            newTigStart = originalContigStart;
+            newTigEnd   = Math.min(originalContigEnd - clipLengthOnRead,
+                                   SvCigarUtils.getUnclippedReadLength(newCigarAlong5to3DirectionOfContig) -
+                                           CigarUtils.countRightClippedBases(newCigarAlong5to3DirectionOfContig));
         } else {
-            newTigStart = input.startInAssembledContig + clipLengthOnRead;
-            newTigEnd   = input.endInAssembledContig;
+            newTigStart = Math.max(originalContigStart + clipLengthOnRead,
+                                   CigarUtils.countLeftClippedBases(newCigarAlong5to3DirectionOfContig) + 1);
+            newTigEnd   = originalContigEnd;
         }
-        return new AlignmentInterval(result._1, newTigStart, newTigEnd, result._2, input.forwardStrand, input.mapQual,
-                AlignmentInterval.NO_NM, AlignmentInterval.NO_AS, AlnModType.UNDERGONE_OVERLAP_REMOVAL);
+
+        return new Tuple2<>(newTigStart, newTigEnd);
     }
 
     /**
@@ -103,7 +117,7 @@ public final class ContigAlignmentsModifier {
 
                     // then deal with ref span
                     refBasesConsumed += ce.getOperator().isAlignment() ? (clipLengthOnRead - readBasesConsumed)
-                                                                       : ce.getLength();
+                                                                       : 0;
 
                     break;
                 }
