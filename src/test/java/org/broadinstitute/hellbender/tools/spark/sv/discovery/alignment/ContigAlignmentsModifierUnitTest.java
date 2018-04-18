@@ -58,7 +58,7 @@ public class ContigAlignmentsModifierUnitTest extends GATKBaseTest {
     public void testGappedAlignmentBreaker_OneDeletion() {
         final Cigar cigar = TextCigarCodec.decode("2S205M2D269M77S");
         final AlignmentInterval alignmentInterval = new AlignmentInterval(new SimpleInterval("1", 100, 575),
-                208, 476, cigar, true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+                3, 476, cigar, true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
 
         final List<AlignmentInterval> generatedARList = Utils.stream(ContigAlignmentsModifier.splitGappedAlignment(alignmentInterval,
                 1, cigar.getReadLength())).collect(Collectors.toList());
@@ -225,7 +225,7 @@ public class ContigAlignmentsModifierUnitTest extends GATKBaseTest {
         final Cigar cigar = TextCigarCodec.decode("10S1044M122I395M75I");
         final AlignmentInterval alignmentInterval = new AlignmentInterval(
                 new SimpleInterval("chrUn_JTFH01000557v1_decoy", 21, 1459), 11,
-                1646, cigar, false, 60, 200, 100, ContigAlignmentsModifier.AlnModType.NONE);
+                1571, cigar, false, 60, 200, 100, ContigAlignmentsModifier.AlnModType.NONE);
         final List<AlignmentInterval> generatedARList = Utils.stream(ContigAlignmentsModifier.splitGappedAlignment(alignmentInterval,
                 1, cigar.getReadLength())).collect(Collectors.toList());
         Assert.assertEquals(generatedARList.get(0), new AlignmentInterval(
@@ -242,35 +242,69 @@ public class ContigAlignmentsModifierUnitTest extends GATKBaseTest {
     public void testGappedAlignmentBreaker_ExpectException() {
         int exceptionCount = 0;
 
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10H10D10M"));} catch (final Exception ex) {++exceptionCount;}
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10S10D10M"));} catch (final Exception ex) {++exceptionCount;}
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10M10D10S"));} catch (final Exception ex) {++exceptionCount;}
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10M10D10H"));} catch (final Exception ex) {++exceptionCount;}
+        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10H10D10M"), 11);} catch (final Exception ex) {++exceptionCount;}
+        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10S10D10M"), 11);} catch (final Exception ex) {++exceptionCount;}
+        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10M10D10S"), 1);} catch (final Exception ex) {++exceptionCount;}
+        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10M10D10H"), 1);} catch (final Exception ex) {++exceptionCount;}
 
-        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10I10S"));} catch (final Exception ex) {++exceptionCount;}
-        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10D10S"));} catch (final Exception ex) {++exceptionCount;}
+        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10I10S"), 11);} catch (final Exception ex) {++exceptionCount;}
+        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10D10S"), 21);} catch (final Exception ex) {++exceptionCount;}
 
-        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10I10M10D10S"));} catch (final Exception ex) {++exceptionCount;}
-        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10D10M10I10S"));} catch (final Exception ex) {++exceptionCount;}
-
-        // these 4 are fine now
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10H10I10M"));} catch (final Exception ex) {++exceptionCount;}
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10S10I10M"));} catch (final Exception ex) {++exceptionCount;}
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10M10I10S"));} catch (final Exception ex) {++exceptionCount;}
-        try {willThrowOnInvalidCigar(TextCigarCodec.decode("10M10I10H"));} catch (final Exception ex) {++exceptionCount;}
-
-        // last two are valid
-        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10M10I10M10S"));} catch (final Exception ex) {++exceptionCount;}
-        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10M10D10M10S"));} catch (final Exception ex) {++exceptionCount;}
+        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10I10M10D10S"), 11);} catch (final Exception ex) {++exceptionCount;}
+        try{willThrowOnInvalidCigar(TextCigarCodec.decode("10H10D10M10I10S"), 21);} catch (final Exception ex) {++exceptionCount;}
 
         Assert.assertEquals(exceptionCount, 8);
     }
 
-    private static Iterable<AlignmentInterval> willThrowOnInvalidCigar(final Cigar cigar) throws GATKException {
+    private static Iterable<AlignmentInterval> willThrowOnInvalidCigar(final Cigar cigar, final int readStart) throws GATKException {
         final AlignmentInterval detailsDoesnotMatter = new AlignmentInterval(
-                new SimpleInterval("1", 1, 110), 21, 30, cigar,
+                new SimpleInterval("1", 1, cigar.getReferenceLength()),
+                readStart, readStart+cigar.getReadLength()-SvCigarUtils.getNumSoftClippingBases(true, cigar.getCigarElements())-SvCigarUtils.getNumSoftClippingBases(false, cigar.getCigarElements()), cigar,
                 true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
         return ContigAlignmentsModifier.splitGappedAlignment(detailsDoesnotMatter, 1, cigar.getReadLength() + SvCigarUtils.getTotalHardClipping(cigar));
+    }
+
+
+    @Test(groups = "sv")
+    public void testGappedAlignmentBreaker_NoLongerExpectException() { // not testing correctness, just testing the function now accepts these
+
+        // these 4 are fine now
+        Cigar cigar = TextCigarCodec.decode("10H10I10M");
+        AlignmentInterval alignment = new AlignmentInterval(new SimpleInterval("1", 1, 10),
+                21, 30, cigar,
+                true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        ContigAlignmentsModifier.splitGappedAlignment(alignment, 1, cigar.getReadLength() + SvCigarUtils.getTotalHardClipping(cigar));
+
+        cigar = TextCigarCodec.decode("10S10I10M");
+        alignment = new AlignmentInterval(new SimpleInterval("1", 1, 10),
+                21, 30, cigar,
+                true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        ContigAlignmentsModifier.splitGappedAlignment(alignment, 1, cigar.getReadLength() + SvCigarUtils.getTotalHardClipping(cigar));
+
+        cigar = TextCigarCodec.decode("10M10I10S");
+        alignment = new AlignmentInterval(new SimpleInterval("1", 1, 10),
+                1, 10, cigar,
+                true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        ContigAlignmentsModifier.splitGappedAlignment(alignment, 1, cigar.getReadLength() + SvCigarUtils.getTotalHardClipping(cigar));
+
+        cigar = TextCigarCodec.decode("10M10I10H");
+        alignment = new AlignmentInterval(new SimpleInterval("1", 1, 10),
+                1, 10, cigar,
+                true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        ContigAlignmentsModifier.splitGappedAlignment(alignment, 1, cigar.getReadLength() + SvCigarUtils.getTotalHardClipping(cigar));
+
+        // last two are valid
+        cigar = TextCigarCodec.decode("10H10M10I10M10S");
+        alignment = new AlignmentInterval(new SimpleInterval("1", 1, 20),
+                11, 40, cigar,
+                true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        ContigAlignmentsModifier.splitGappedAlignment(alignment, 1, cigar.getReadLength() + SvCigarUtils.getTotalHardClipping(cigar));
+
+        cigar = TextCigarCodec.decode("10H10M10D10M10S");
+        alignment = new AlignmentInterval(new SimpleInterval("1", 1, 30),
+                11, 30, cigar,
+                true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        ContigAlignmentsModifier.splitGappedAlignment(alignment, 1, cigar.getReadLength() + SvCigarUtils.getTotalHardClipping(cigar));
     }
 
     //==================================================================================================================

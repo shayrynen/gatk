@@ -26,12 +26,12 @@ public class AlignmentIntervalUnitTest extends GATKBaseTest {
         final List<Object[]> data = new ArrayList<>(20);
 
         AlignmentInterval ar1 = new AlignmentInterval(new SimpleInterval("1",1,5), 1,5, TextCigarCodec.decode("5M5H"),true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
-        AlignmentInterval ar2 = new AlignmentInterval(new SimpleInterval("1",10,16), 5,10, TextCigarCodec.decode("4S6M"),true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        AlignmentInterval ar2 = new AlignmentInterval(new SimpleInterval("1",11,16), 5,10, TextCigarCodec.decode("4S6M"),true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
 
         data.add(new Object[]{ar1, ar2, 1, 0});
 
         ar1 = new AlignmentInterval(new SimpleInterval("1",1,5), 1,5, TextCigarCodec.decode("5M5H"),true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
-        ar2 = new AlignmentInterval(new SimpleInterval("1",11,16), 6,10, TextCigarCodec.decode("5S5M"),true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
+        ar2 = new AlignmentInterval(new SimpleInterval("1",11,15), 6,10, TextCigarCodec.decode("5S5M"),true, 60, 0, 100, ContigAlignmentsModifier.AlnModType.NONE);
         data.add(new Object[]{ar1, ar2, 0, 0});
 
         // overlaps on ref only
@@ -40,7 +40,7 @@ public class AlignmentIntervalUnitTest extends GATKBaseTest {
         data.add(new Object[]{ar1, ar2, 0, 59});
 
         ar1 = new AlignmentInterval(new SimpleInterval("chr1",9170350,9171390), 1,1041, TextCigarCodec.decode("1041M1298H"),false, 60, 4, 1021, ContigAlignmentsModifier.AlnModType.NONE);
-        ar2 = new AlignmentInterval(new SimpleInterval("chr1",9169370,9170505), 1204,2239, TextCigarCodec.decode("1203S1136M"),false, 60, 22, 1026, ContigAlignmentsModifier.AlnModType.NONE);
+        ar2 = new AlignmentInterval(new SimpleInterval("chr1",9169370,9170505), 1204,2339, TextCigarCodec.decode("1203S1136M"),false, 60, 22, 1026, ContigAlignmentsModifier.AlnModType.NONE);
         data.add(new Object[]{ar1, ar2, 0, 505-350+1});
 
         // overlaps on read only
@@ -72,7 +72,7 @@ public class AlignmentIntervalUnitTest extends GATKBaseTest {
 
         // different chr
         ar1 = new AlignmentInterval(new SimpleInterval("chr1",9170350,9171390), 1,1041, TextCigarCodec.decode("1041M1298H"),false, 60, 4, 1021, ContigAlignmentsModifier.AlnModType.NONE);
-        ar2 = new AlignmentInterval(new SimpleInterval("chr2",9169370,9170505), 1204,2239, TextCigarCodec.decode("1203S1136M"),false, 60, 22, 1026, ContigAlignmentsModifier.AlnModType.NONE);
+        ar2 = new AlignmentInterval(new SimpleInterval("chr2",9169370,9170505), 1204,2339, TextCigarCodec.decode("1203S1136M"),false, 60, 22, 1026, ContigAlignmentsModifier.AlnModType.NONE);
         data.add(new Object[]{ar1, ar2, 0, 0});
 
         return data.toArray(new Object[data.size()][]);
