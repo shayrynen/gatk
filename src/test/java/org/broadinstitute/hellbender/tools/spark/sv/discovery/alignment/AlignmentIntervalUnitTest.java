@@ -432,4 +432,27 @@ public class AlignmentIntervalUnitTest extends GATKBaseTest {
                                                    final boolean expectedResult) {
         Assert.assertEquals(alignment.containsGapOfEqualOrLargerSize(gapSize), expectedResult);
     }
+
+    @DataProvider(name = "forTestCtorArgChecking")
+    private Object[][] forTestCtorArgChecking() {
+        final List<Object[]> data = new ArrayList<>(20);
+
+        data.add(new Object[]{TextCigarCodec.decode("1155M1154S"), new SimpleInterval("chr22", 47043976, 47045130), 1, 1155, null});
+        data.add(new Object[]{TextCigarCodec.decode("1424M1424S"), new SimpleInterval("chr15", 80355809, 80357232), 1, 1424, null});
+
+        data.add(new Object[]{TextCigarCodec.decode("1155M1154S"), new SimpleInterval("chr22", 47043976, 47045131), 1, 1155, IllegalArgumentException.class});
+        data.add(new Object[]{TextCigarCodec.decode("1424M1424S"), new SimpleInterval("chr15", 80355809, 80357232), 1, 1429, IllegalArgumentException.class});
+
+        return data.toArray(new Object[data.size()][]);
+    }
+    @Test(groups = "sv", dataProvider = "forTestCtorArgChecking")
+    @SuppressWarnings("rawtypes")
+    public void testCtorArgChecking(final Cigar cigar, final SimpleInterval referenceSpan, final int readStart, final int readEnd,
+                                    final Class expectedExceptionClass) {
+        try {
+            AlignmentInterval.checkValidArgument(cigar, referenceSpan, readStart, readEnd);
+        } catch (final Exception e) {
+            Assert.assertEquals(e.getClass(), expectedExceptionClass);
+        }
+    }
 }
